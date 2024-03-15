@@ -97,8 +97,17 @@ public:
 private:
     // callback funtion
     void publishImage() {
+        
+        if (frameData.frame_yuv_data != NULL){
+            cv::Mat YUV_Image = convertYUV422ToBGR(frameData.frame_yuv_data);
+            image_msg = cv_bridge::CvImage(std_msgs::msg::Header(), "bgr8", YUV_Image).toImageMsg();
 
-        cv::Mat YUV_Image = convertYUV422ToBGR(frameData.frame_yuv_data);
+            // Publish the image message
+            publisher_->publish(*image_msg.get());
+            RCLCPP_INFO(this->get_logger(), "Thermal image is published");
+        }
+
+        
 
         // cv::Mat Y16_Image = convertY16ToGray(frameData.frame_src_data);
 
@@ -110,14 +119,7 @@ private:
         //     }
 
         
-        image_msg = cv_bridge::CvImage(std_msgs::msg::Header(), "bgr8", YUV_Image).toImageMsg();
 
-
-
-
-        // Publish the image message
-        publisher_->publish(*image_msg.get());
-        RCLCPP_INFO(this->get_logger(), "Thermal image is published");
     }
 
     // cv::Mat captureThermalImage() {
@@ -151,10 +153,12 @@ int main(int argc, char *argv[]) {
 
     guide_usb_setpalette(5);
 
+
     guide_usb_device_info_t* deviceInfo = (guide_usb_device_info_t*)malloc(sizeof (guide_usb_device_info_t));
     deviceInfo->width = WIDTH;
     deviceInfo->height = HEIGHT;
     deviceInfo->video_mode = Y16_PARAM_YUV;
+
     
     ret = guide_usb_openstream(deviceInfo, (OnFrameDataReceivedCB)frameCallBack, (OnDeviceConnectStatusCB)connectStatusCallBack);
     if(ret < 0)
