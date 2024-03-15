@@ -3,7 +3,7 @@
 ### build
 ```
 git clone https://github.com/AirLab-Drone/Thermal_CION417RG2.git
-cd build
+mkdir build && cd build
 cmake ..
 make
 ```
