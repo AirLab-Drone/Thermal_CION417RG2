@@ -6,7 +6,7 @@ ubuntu 22.04 usb3.0 SDK
 
 ### build
 ```
-git clone https://github.com/AirLab-Drone/Thermal_CION417RG2.git
+git clone https://github.com/AirLab-Drone/Thermal_CION417RG2.git/.
 mkdir build && cd build
 cmake ..
 make
