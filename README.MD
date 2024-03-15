@@ -1,4 +1,8 @@
 
+This is for thermal camera model CION417RG2
+ubuntu 22.04 usb3.0 SDK
+
+----
 
 ### build
 ```
