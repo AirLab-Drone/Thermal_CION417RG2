@@ -25,9 +25,9 @@ extern "C"
 /* ---------------------------------- 函式宣告 ---------------------------------- */
 int frameCallBack(guide_usb_frame_data_t *pVideoData);
 int connectStatusCallBack(guide_usb_device_status_e deviceStatus);
-// cv::Mat convertYUV422ToBGR(const short* yuv422Data);
-// cv::Mat convertRGBToMat(const unsigned char* rgbData);
-// cv::Mat convertY16ToGray(const short* y16Data);
+cv::Mat convertYUV422ToBGR(const short* yuv422Data);
+cv::Mat convertRGBToMat(const unsigned char* rgbData);
+cv::Mat convertY16ToGray(const short* y16Data);
 
 bool exitLoop = false;
 
@@ -192,24 +192,24 @@ int frameCallBack(guide_usb_frame_data_t *pVideoData)
 }
 
 
-// cv::Mat convertYUV422ToBGR(const short* yuv422Data) {
-//     cv::Mat yuvImage(HEIGHT, WIDTH, CV_8UC2, (void*)yuv422Data);
-//     cv::Mat bgrImage;
-//     cv::cvtColor(yuvImage, bgrImage, cv::COLOR_YUV2BGR_YUYV); // 使用OpenCV函數將YUV轉換為BGR
-//     return bgrImage;
-// }
+cv::Mat convertYUV422ToBGR(const short* yuv422Data) {
+    cv::Mat yuvImage(HEIGHT, WIDTH, CV_8UC2, (void*)yuv422Data);
+    cv::Mat bgrImage;
+    cv::cvtColor(yuvImage, bgrImage, cv::COLOR_YUV2BGR_YUYV); // 使用OpenCV函數將YUV轉換為BGR
+    return bgrImage;
+}
 
-// cv::Mat convertRGBToMat(const unsigned char* rgbData) {
-//     cv::Mat rgbImage(HEIGHT, WIDTH, CV_8UC3, (void*)rgbData);
-//     return rgbImage.clone(); // 返回複製的影像以避免內存問題
-// }
+cv::Mat convertRGBToMat(const unsigned char* rgbData) {
+    cv::Mat rgbImage(HEIGHT, WIDTH, CV_8UC3, (void*)rgbData);
+    return rgbImage.clone(); // 返回複製的影像以避免內存問題
+}
 
 
-// cv::Mat convertY16ToGray(const short* y16Data) {
-//     cv::Mat grayImage(HEIGHT, WIDTH, CV_16UC1, (void*)y16Data);
-//     // Convert to 8-bit grayscale image
-//     cv::Mat gray8Bit;
-//     grayImage.convertTo(gray8Bit, CV_8U2, 255.0 / 65535.0); // Scale to 0-255
-//     return gray8Bit;
-// }
+cv::Mat convertY16ToGray(const short* y16Data) {
+    cv::Mat grayImage(HEIGHT, WIDTH, CV_16UC1, (void*)y16Data);
+    // Convert to 8-bit grayscale image
+    cv::Mat gray8Bit;
+    grayImage.convertTo(gray8Bit, CV_8U, 255.0 / 65535.0); // Scale to 0-255
+    return gray8Bit;
+}
 

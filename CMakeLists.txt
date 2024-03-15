@@ -61,21 +61,21 @@ target_link_libraries(test_thermal_node
 
 
 #/* ---------------------------------- 可顯示畫面 --------------------------------- */
-# add_executable(test_thermal src/test_small_thermal.cpp)
-# target_link_libraries(test_thermal 
-#     ${OpenCV_LIBS}
-#     GuideUSBCamera -ldl
-#     pthread
-#     m
-# )
+add_executable(test_thermal src/test_small_thermal.cpp)
+target_link_libraries(test_thermal 
+    ${OpenCV_LIBS}
+    GuideUSBCamera -ldl
+    pthread
+    m
+)
 
 
 
 #/* -------------------------------- 官方給的Demo -------------------------------- */
-# add_executable(Demo src/Demo.c)
-# target_link_libraries(Demo 
-#     ${OpenCV_LIBS}
-#     GuideUSBCamera -ldl
-#     pthread
-#     m
-# )
+add_executable(Demo src/Demo.c)
+target_link_libraries(Demo 
+    ${OpenCV_LIBS}
+    GuideUSBCamera -ldl
+    pthread
+    m
+)
