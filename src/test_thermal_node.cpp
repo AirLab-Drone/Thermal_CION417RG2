@@ -232,6 +232,8 @@ int frameCallBack(guide_usb_frame_data_t *pVideoData)
     frameData.paramLine = pVideoData->paramLine;
     frameData.paramLine_length = pVideoData->paramLine_length;
 
+    // TODO: 計算溫度和RGB顯示
+
     // std::cout << "callback_______________________________________"<< std::endl;
 
 
