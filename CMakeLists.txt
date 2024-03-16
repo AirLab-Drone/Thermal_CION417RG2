@@ -43,21 +43,21 @@ link_directories(lib)
 
 
 #/* ------------------------------ In ros2 node ------------------------------ */
-add_executable(test_thermal_node src/test_thermal_node.cpp)
-target_link_libraries(test_thermal_node 
-    # "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
-    # "$<INSTALL_INTERFACE:include>"
-    ${OpenCV_LIBS}
-    ${rclcpp_LIBRARIES}
-    ${std_msgs_LIBRARIES}
-    ${sensor_msgs_LIBRARIES}
-    # ${cv_bridge_LIBRARIES}  # 這樣不行
-    cv_bridge::cv_bridge      # 這樣會成功==
-    image_transport::image_transport
-    GuideUSBCamera -ldl
-    pthread
-    m
-)
+# add_executable(test_thermal_node src/test_thermal_node.cpp)
+# target_link_libraries(test_thermal_node 
+#     # "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+#     # "$<INSTALL_INTERFACE:include>"
+#     ${OpenCV_LIBS}
+#     ${rclcpp_LIBRARIES}
+#     ${std_msgs_LIBRARIES}
+#     ${sensor_msgs_LIBRARIES}
+#     # ${cv_bridge_LIBRARIES}  # 這樣不行
+#     cv_bridge::cv_bridge      # 這樣會成功==
+#     image_transport::image_transport
+#     GuideUSBCamera -ldl
+#     pthread
+#     m
+# )
 
 
 #/* ---------------------------------- 可顯示畫面 --------------------------------- */
@@ -67,15 +67,28 @@ target_link_libraries(test_thermal
     GuideUSBCamera -ldl
     pthread
     m
+    udev
 )
 
 
 
 #/* -------------------------------- 官方給的Demo -------------------------------- */
-add_executable(Demo src/Demo.c)
-target_link_libraries(Demo 
+# add_executable(Demo src/Demo.c)
+# target_link_libraries(Demo 
+#     ${OpenCV_LIBS}
+#     GuideUSBCamera -ldl
+#     pthread
+#     m
+# )
+
+
+
+#/* ---------------------------------- 尋找裝置 ---------------------------------- */
+add_executable(Find_Thermal_Device src/Find_Thermal_Device.cpp)
+target_link_libraries(Find_Thermal_Device 
     ${OpenCV_LIBS}
     GuideUSBCamera -ldl
     pthread
     m
+    udev
 )

@@ -14,12 +14,19 @@ extern "C"
 }
 
 #include <iostream>
+#include <string>
+#include <libudev.h>
 #include <opencv2/core/core.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
 
 #define WIDTH 384
 #define HEIGHT 288
+
+/* --------------------------------- 熱像儀info -------------------------------- */
+const std::string vendorId = "04b4";
+const std::string productId = "f8f8";
+const std::string deviceDescription = "Cypress Semiconductor Corp. GuideCamera";
 
 
 /* ---------------------------------- 函式宣告 ---------------------------------- */
@@ -28,6 +35,8 @@ int connectStatusCallBack(guide_usb_device_status_e deviceStatus);
 cv::Mat convertYUV422ToBGR(const short* yuv422Data);
 cv::Mat convertRGBToMat(const unsigned char* rgbData);
 cv::Mat convertY16ToGray(const short* y16Data);
+std::string Find_Thermal_Device();
+bool comparePaths(const std::string& path1, const std::string& path2);
 
 bool exitLoop = false;
 
@@ -75,41 +84,64 @@ FrameData frameData;
 
 int main(void)
 {
-
+    int ret;
     guide_usb_setloglevel(LOG_INFO);
-    int ret = guide_usb_initial("/dev/video0");
-    if(ret < 0)
-    {
-        printf("Initial fail:%d \n",ret);
-        return -1;
-    }
 
-    guide_usb_setpalette(5);
+    std::string device_path = Find_Thermal_Device();
+    if (!device_path.empty()){
+        std::cout << "Found Device Path: " << device_path << std::endl;
+        ret = guide_usb_initial(device_path.c_str());
 
-    guide_usb_device_info_t* deviceInfo = (guide_usb_device_info_t*)malloc(sizeof (guide_usb_device_info_t));
-    deviceInfo->width = WIDTH;
-    deviceInfo->height = HEIGHT;
-    deviceInfo->video_mode = Y16_PARAM_YUV;
+        if(ret < 0)
+        {
+            printf("Initial fail:%d \n",ret);
+            return -1;
+        }
 
-    ret = guide_usb_openstream(deviceInfo, (OnFrameDataReceivedCB)frameCallBack, (OnDeviceConnectStatusCB)connectStatusCallBack);
-    if(ret < 0)
-    {
-        printf("Open fail! %d \n",ret);
+        guide_usb_setpalette(5);
+
+
+
+    /* ------------------------------- video mode ------------------------------- */
+
+        // X16 = 0,                         //X16
+        // X16_PARAM = 1,                   //X16+参数行
+        // Y16= 2,							//Y16
+        // Y16_PARAM = 3,					//Y16+参数行
+        // YUV =4,							//YUV
+        // YUV_PARAM = 5,				    //YUV+参数行
+        // Y16_YUV = 6,						//Y16+YUV
+        // Y16_PARAM_YUV = 7				//Y16+参数行+YUV
+
+
+
+        guide_usb_device_info_t* deviceInfo = (guide_usb_device_info_t*)malloc(sizeof (guide_usb_device_info_t));
+        deviceInfo->width = WIDTH;
+        deviceInfo->height = HEIGHT;
+        deviceInfo->video_mode = Y16_PARAM_YUV;
+
+        ret = guide_usb_openstream(deviceInfo, (OnFrameDataReceivedCB)frameCallBack, (OnDeviceConnectStatusCB)connectStatusCallBack);
+        if(ret < 0)
+        {
+            printf("Open fail! %d \n",ret);
+            return ret;
+        }
+
+        while(!exitLoop)
+        {   
+            // usleep(10);
+        }
+
+        ret = guide_usb_closestream();
+        printf("close usb return %d\n",ret);
+
+        ret = guide_usb_exit();
+        printf("exit return %d\n",ret);
+
         return ret;
     }
 
-    while(!exitLoop)
-    {   
-        // usleep(10);
-    }
 
-    ret = guide_usb_closestream();
-    printf("close usb return %d\n",ret);
-
-    ret = guide_usb_exit();
-    printf("exit return %d\n",ret);
-
-    return ret;
 }
 
 int connectStatusCallBack(guide_usb_device_status_e deviceStatus)
@@ -174,7 +206,7 @@ int frameCallBack(guide_usb_frame_data_t *pVideoData)
     cv::Mat Y16_img = convertY16ToGray(frameData.frame_src_data);
     cv::Mat YUVImage = convertYUV422ToBGR(frameData.frame_yuv_data);
 
-
+    // cv::imshow("Thermal Image", YUVImage);
 
     cv::imshow("RGB Image", rgbImage);
     cv::imshow("Y16 Image", Y16_img);
@@ -211,5 +243,83 @@ cv::Mat convertY16ToGray(const short* y16Data) {
     cv::Mat gray8Bit;
     grayImage.convertTo(gray8Bit, CV_8U, 255.0 / 65535.0); // Scale to 0-255
     return gray8Bit;
+}
+
+
+std::string Find_Thermal_Device() {
+
+    struct udev *udev = udev_new();
+    if (!udev) {
+        std::cerr << "无法初始化 udev" << std::endl;
+        return "";
+    }
+
+    struct udev_enumerate *enumerate = udev_enumerate_new(udev);
+    if (!enumerate) {
+        std::cerr << "无法创建 udev 枚举器" << std::endl;
+        udev_unref(udev);
+        return "";
+    }
+
+    // 添加匹配规则：使用设备的厂商 ID、产品 ID 和描述信息
+    udev_enumerate_add_match_property(enumerate, "ID_VENDOR_ID", vendorId.c_str());
+    udev_enumerate_add_match_property(enumerate, "ID_MODEL_ID", productId.c_str());
+    udev_enumerate_add_match_property(enumerate, "ID_MODEL", deviceDescription.c_str());
+    udev_enumerate_scan_devices(enumerate);
+
+    struct udev_list_entry *devices = udev_enumerate_get_list_entry(enumerate);
+    struct udev_list_entry *entry;
+
+    std::string maxVideoPath = "";
+
+    udev_list_entry_foreach(entry, devices) {
+        const char *path = udev_list_entry_get_name(entry);
+        struct udev_device *device = udev_device_new_from_syspath(udev, path);
+
+        const char *deviceName = udev_device_get_sysname(device);
+        if (deviceName) {
+            const char *devicePath = udev_device_get_devnode(device);
+            if (devicePath && std::string(deviceName).find("video") != std::string::npos) {
+                std::cout << "设备名称: " << deviceName << std::endl;
+                std::cout << "设备路径: " << devicePath << std::endl;
+                if (maxVideoPath.empty() || comparePaths(devicePath, maxVideoPath)) {
+                    maxVideoPath = devicePath;
+                }
+            }
+        }
+        udev_device_unref(device);
+    }
+
+    if (!maxVideoPath.empty()) {
+        udev_enumerate_unref(enumerate);
+        udev_unref(udev);
+        return maxVideoPath;
+    }
+
+    std::cout << "未找到 Cypress Semiconductor Corp. GuideCamera 的视频设备" << std::endl;
+
+    udev_enumerate_unref(enumerate);
+    udev_unref(udev);
+
+    return "";
+}
+
+
+bool comparePaths(const std::string& path1, const std::string& path2) {
+    size_t pos1 = path1.find_last_of("/");
+    size_t pos2 = path2.find_last_of("/");
+    if (pos1 == std::string::npos || pos2 == std::string::npos) {
+        return false;
+    }
+    std::string path1Suffix = path1.substr(pos1 + 1);
+    std::string path2Suffix = path2.substr(pos2 + 1);
+    size_t numPos1 = path1Suffix.find("video");
+    size_t numPos2 = path2Suffix.find("video");
+    if (numPos1 == std::string::npos || numPos2 == std::string::npos) {
+        return false;
+    }
+    int num1 = std::stoi(path1Suffix.substr(numPos1 + 5));
+    int num2 = std::stoi(path2Suffix.substr(numPos2 + 5));
+    return num1 < num2;
 }
 
