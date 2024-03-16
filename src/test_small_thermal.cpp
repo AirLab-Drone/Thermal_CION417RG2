@@ -79,22 +79,24 @@ struct FrameData {
 };
 
 
-FrameData frameData;
+FrameData frameData; // 存放熱像儀的輸出資料
+
 
 
 int main(void)
 {
-    int ret;
+    int ret=0;
     guide_usb_setloglevel(LOG_INFO);
 
     std::string device_path = Find_Thermal_Device();
+
     if (!device_path.empty()){
         std::cout << "Found Device Path: " << device_path << std::endl;
         ret = guide_usb_initial(device_path.c_str());
 
         if(ret < 0)
-        {
-            printf("Initial fail:%d \n",ret);
+        {   
+            std::cerr << "Initial fail:" << ret << std::endl;
             return -1;
         }
 
@@ -123,7 +125,8 @@ int main(void)
         ret = guide_usb_openstream(deviceInfo, (OnFrameDataReceivedCB)frameCallBack, (OnDeviceConnectStatusCB)connectStatusCallBack);
         if(ret < 0)
         {
-            printf("Open fail! %d \n",ret);
+            std::cerr << "Open fail!" << ret << std::endl;
+            delete deviceInfo;
             return ret;
         }
 
@@ -133,45 +136,29 @@ int main(void)
         }
 
         ret = guide_usb_closestream();
-        printf("close usb return %d\n",ret);
+        std::cout << "close usb return" << ret << std::endl;
 
         ret = guide_usb_exit();
-        printf("exit return %d\n",ret);
+        std::cout << "exit return" << ret << std::endl; 
 
+        delete deviceInfo;
         return ret;
     }
-
-
+    return ret;
 }
 
 int connectStatusCallBack(guide_usb_device_status_e deviceStatus)
 {
     if(deviceStatus == DEVICE_CONNECT_OK)
     {
-        printf("VideoStream is Staring...\n");
+        std::cout << "VideoStream is Staring..." << std::endl;
     }
     else
     {
-        printf("VideoStream is closing...\n");
+        std::cout << "VideoStream is Closing..." << std::endl;
     }
 }
 
-
-/* ---------------------------------- 數據類型 ---------------------------------- */
-
-// int frame_width;                 //图像宽度
-// int frame_height;                //图像高度
-// unsigned char* frame_rgb_data;   //rgb 数据
-// int frame_rgb_data_length;       //rgb 数据长度
-// short* frame_src_data;           //原始数据 y16
-// int frame_src_data_length;       //原始数据长度
-// short* frame_yuv_data;           //yuv422 数据
-// int frame_yuv_data_length;       //yuv422 数据长度
-// short* paramLine;                //参数行
-// int paramLine_length;            //参数行长度
-
-
-/* ------------------------------------------------------------------------------ */
 
 
 
