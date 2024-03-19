@@ -21,10 +21,6 @@ extern "C"
 #include <opencv2/highgui/highgui.hpp>
 
 
-
-// branch test
-
-
 #define WIDTH 384
 #define HEIGHT 288
 
