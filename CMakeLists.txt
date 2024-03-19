@@ -39,41 +39,43 @@ include_directories(${image_transport_INCLUDE_DIRS})
 
 
 include_directories(include)
-link_directories(lib)
+link_directories(lib) # old sdk lib
+link_directories(lib/dynamic)
+link_directories(lib/static)
 
 
-#/* ------------------------------ In ros2 node ------------------------------ */
-add_executable(test_thermal_node src/test_thermal_node.cpp)
-target_link_libraries(test_thermal_node 
-    # "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
-    # "$<INSTALL_INTERFACE:include>"
-    ${OpenCV_LIBS}
-    ${rclcpp_LIBRARIES}
-    ${std_msgs_LIBRARIES}
-    ${sensor_msgs_LIBRARIES}
-    # ${cv_bridge_LIBRARIES}  # 這樣不行
-    cv_bridge::cv_bridge      # 這樣會成功==
-    image_transport::image_transport
-    GuideUSBCamera -ldl
-    pthread
-    m
-    udev
-)
+# /* ------------------------------ In ros2 node ------------------------------ */
+# add_executable(test_thermal_node src/test_thermal_node.cpp)
+# target_link_libraries(test_thermal_node 
+#     # "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+#     # "$<INSTALL_INTERFACE:include>"
+#     ${OpenCV_LIBS}
+#     ${rclcpp_LIBRARIES}
+#     ${std_msgs_LIBRARIES}
+#     ${sensor_msgs_LIBRARIES}
+#     # ${cv_bridge_LIBRARIES}  # 這樣不行
+#     cv_bridge::cv_bridge      # 這樣會成功==
+#     image_transport::image_transport
+#     GuideUSBCamera -ldl
+#     pthread
+#     m
+#     udev
+# )
 
 
-#/* ---------------------------------- 可顯示畫面 --------------------------------- */
-add_executable(test_thermal src/test_small_thermal.cpp)
-target_link_libraries(test_thermal 
-    ${OpenCV_LIBS}
-    GuideUSBCamera -ldl
-    pthread
-    m
-    udev
-)
+# /* ---------------------------------- 可顯示畫面 --------------------------------- */
+# add_executable(test_thermal src/test_small_thermal.cpp)
+# target_link_libraries(test_thermal 
+#     ${OpenCV_LIBS}
+#     GuideUSBCamera -ldl
+#     pthread
+#     m
+#     udev
+# )
 
 
 
-#/* -------------------------------- 官方給的Demo -------------------------------- */
+# /* -------------------------------- 官方給的Demo -------------------------------- */
 # add_executable(Demo src/Demo.c)
 # target_link_libraries(Demo 
 #     ${OpenCV_LIBS}
@@ -81,3 +83,15 @@ target_link_libraries(test_thermal
 #     pthread
 #     m
 # )
+
+
+# /* ------------------------------ 測試新的SDK Demo ------------------------------ */
+add_executable(test_new_SDK_demo src/test_new_SDK_demo.cpp)
+target_link_libraries(test_new_SDK_demo 
+    ${OpenCV_LIBS}
+    # GuideUSBCamera -ldl   # old SDK
+    pthread
+    m
+    libGuideMT.a
+    libGuideMT.so
+)
