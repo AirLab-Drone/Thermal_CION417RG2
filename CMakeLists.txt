@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.8)
 
-Project(small_thermal)
+Project(thermal_COIN417RG2)
 
 
 # Default to C99
