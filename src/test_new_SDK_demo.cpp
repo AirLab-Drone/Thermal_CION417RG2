@@ -14,9 +14,6 @@
 
 int main() {
 
-    guide
-
-
     return 0;
 } 
 
