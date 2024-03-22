@@ -154,14 +154,9 @@ int frameCallBack(guide_usb_frame_data_t *pVideoData)
 
     int ret = 0;
     // guide_measure_convertgray2temper(0, 1, pVideoData->frame_src_data, paramline, 1, measureExternalParam, pTemper);
-    guide_measure_convertgray2temper(1, 1, pVideoData->frame_src_data, paramline, WIDTH*HEIGHT, measureExternalParam, pTemper);
-    // printf("first pix temp-------------------------%.1f\n", pTemper[5]);
+    guide_measure_convertgray2temper(1, 1, pVideoData->frame_src_data, paramline, 1, measureExternalParam, pTemper);
+    printf("first pix temp-------------------------%.1f\n", pTemper[0]);
 
-
-    for(int i=0; i<WIDTH*HEIGHT; i++) {
-        printf("%.1f ", pTemper[i]);
-    }
-    printf("------------------------------------------------\n");
 
     // SaveRawImage("GaodeiR",(unsigned char *)pVideoData->frame_src_data,pVideoData->frame_src_data_length*2);
     //

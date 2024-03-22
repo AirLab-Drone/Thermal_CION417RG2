@@ -56,16 +56,15 @@ struct FrameData {
     int frame_yuv_data_length;          // YUV422 數據長度
     short* paramLine;                   // 參數行
     int paramLine_length;               // 參數行長度
-    float* pTemper;                     // 浮點數陣列指標
-    int pTemper_length;                 // 浮點數陣列長度
+
 
     // 構造函式
     FrameData() : frame_width(0), frame_height(0),
                   frame_rgb_data(nullptr), frame_rgb_data_length(0),
                   frame_src_data(nullptr), frame_src_data_length(0),
                   frame_yuv_data(nullptr), frame_yuv_data_length(0),
-                  paramLine(nullptr), paramLine_length(0),
-                  pTemper(nullptr), pTemper_length(0) {}
+                  paramLine(nullptr), paramLine_length(0) {}
+
 
     // 解構函式
     ~FrameData() {
@@ -82,16 +81,14 @@ struct FrameData {
         if (paramLine != nullptr) {
             delete[] paramLine;
         }
-        if (pTemper != nullptr) {
-            delete[] pTemper;
-        }
     }
 };
 
 
 FrameData frameData; // 存放熱像儀的輸出資料
 guide_measure_external_param_t *measureExternalParam; //熱像儀參數設定
-unsigned char *paramline = NULL;
+
+
 
 
 
@@ -114,11 +111,6 @@ int main(void)
 
         guide_usb_setpalette(8);
 
-
-        if (paramline == NULL)
-        {
-            paramline = (unsigned char *)malloc(WIDTH * 2);
-        }
 
         measureExternalParam = (guide_measure_external_param_t *)malloc(sizeof(guide_measure_external_param_t));
         measureExternalParam->emiss = 98;
@@ -169,12 +161,6 @@ int main(void)
         std::cout << "exit return" << ret << std::endl; 
 
 
-        if (paramline != NULL)
-        {
-            free(paramline);
-            paramline = NULL;
-        }
-
         delete deviceInfo;
         return ret;
     }
@@ -210,30 +196,31 @@ int frameCallBack(guide_usb_frame_data_t *pVideoData)
     frameData.frame_yuv_data_length = pVideoData->frame_yuv_data_length;
     frameData.paramLine = pVideoData->paramLine;
     frameData.paramLine_length = pVideoData->paramLine_length;
-    frameData.pTemper = (float *)malloc(sizeof(float) * WIDTH * HEIGHT);
 
 
-    if (frameData.paramLine != NULL) {
-        memcpy(paramline, frameData.paramLine, frameData.paramLine_length);
-    }
+    // guide_temp_to_rgb24(float*  pTemp,  unsigned  char*  pRgb,  int  width,intheight,float  minT, float maxT,int paletteIndex) 
+
+    /*
+    44: 最熱點x座標
+    45: 最熱點y座標
+    46: 最熱點溫度
+    47: 最冷點x座標
+    48: 最冷點y座標
+    49: 最冷點溫度
+    */
+
+    std::cout << "最熱點x座標: " << frameData.paramLine[44] << std::endl;
+    std::cout << "最熱點y座標: " << frameData.paramLine[45] << std::endl;
+    std::cout << "最熱點溫度: " << frameData.paramLine[46] << std::endl;
+    
+    std::cout << "最冷點x座標: " << frameData.paramLine[47] << std::endl;
+    std::cout << "最冷點y座標: " << frameData.paramLine[48] << std::endl;
+    std::cout << "最冷點溫度: " << frameData.paramLine[49] << std::endl;
+
+    std::cout << "==================================================" << std::endl;
 
 
-    // std::cout << frameData.frame_rgb_data_length << std::endl;
 
-    // std::cout << typeid(frameData.paramLine).name() << std::endl;
-
-
-    // for (int i = 0; i < frameData.paramLine_length; ++i) {
-    //     std::cout << frameData.paramLine[i] << ", ";
-    // }
-    // std::cout << std::endl;
-
-
-    guide_measure_convertgray2temper(1, 1, frameData.frame_src_data, frameData.paramLine,
-        WIDTH*HEIGHT, measureExternalParam, frameData.pTemper);
-
-    std::cout << "first pix temp: " << frameData.pTemper[0] <<
-printf("first pix temp-------------------------%.1f\n", pTemper[0]);
     
     cv::Mat rgbImage = convertRGBToMat(frameData.frame_rgb_data);
     cv::Mat Y16_img = convertY16ToGray(frameData.frame_src_data);
