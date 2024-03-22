@@ -39,7 +39,7 @@ include_directories(${image_transport_INCLUDE_DIRS})
 
 
 include_directories(include)
-link_directories(lib/dynamic)
+# link_directories(lib/dynamic)
 link_directories(lib/static)
 
 
@@ -106,9 +106,11 @@ target_link_libraries(New_Demo
 # add_executable(test_new_SDK_demo src/test_new_SDK_demo.cpp)
 # target_link_libraries(test_new_SDK_demo 
 #     ${OpenCV_LIBS}
-#     # GuideUSBCamera -ldl   # old SDK
+#     GuideUSBCamera -ldl
+#     GuideMT -ldl
 #     pthread
 #     m
-#     libGuideMT.a
-#     libGuideMT.so
+#     udev
+#     # libGuideMT.a
+#     # libGuideMT.so
 # )
