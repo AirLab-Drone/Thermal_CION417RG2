@@ -113,7 +113,7 @@ dllexport int guide_isotherm(int devtype, int lenstype,float temperal, float tem
  * @param[in]   paletteIndex伪彩序号0~9
  * @return      @ref gmt_ret_code_e  0 成功 <0 失败
  */
-dllexport int guide_temp_to_rgb24(float* pTemp, unsigned char* pRgb, int width,int height,float minT, float maxT,int paletteIndex);
+dllexport int guide_temp_to_rgb24(float* pTemp, unsigned char* pRgb, int width, int height, float minT, float maxT, int paletteIndex);
 
 #ifdef __cplusplus
 }

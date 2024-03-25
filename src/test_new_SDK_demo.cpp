@@ -4,11 +4,12 @@
 #include <iostream>
 #include <string>
 
+
 extern "C"{
+#include "guideusbcamera.h"
 #include "guidemt.h"
 #include <stdio.h>
 #include <sys/types.h>
-#include "guideusbcamera.h"
 #include <unistd.h>
 #include <malloc.h>
 #include <string.h>
@@ -26,6 +27,8 @@ extern "C"{
 
 #define WIDTH 384
 #define HEIGHT 288
+#define SIZE 110592
+
 
 /* --------------------------------- 熱像儀info -------------------------------- */
 const std::string vendorId = "04b4";
@@ -85,15 +88,47 @@ struct FrameData {
 };
 
 
-FrameData frameData; // 存放熱像儀的輸出資料
-guide_measure_external_param_t *measureExternalParam; //熱像儀參數設定
+struct ThermalOutputData {
+    unsigned char* paramline;
+    float* pTemper;
+    short* pGray;
+    unsigned char* pRgb;
+
+    // Constructor
+    ThermalOutputData() : paramline(nullptr), pTemper(nullptr), pGray(nullptr), pRgb(nullptr) {}
+
+    // Destructor
+    ~ThermalOutputData() {
+        if (paramline != nullptr) {
+            delete[] paramline;
+            paramline = nullptr;
+        }
+        if (pTemper != nullptr) {
+            delete[] pTemper;
+            pTemper = nullptr;
+        }
+        if (pGray != nullptr) {
+            delete[] pGray;
+            pGray = nullptr;
+        }
+        if (pRgb != nullptr) {
+            delete[] pRgb;
+            pRgb = nullptr;
+        }
+    }
+};
+
+
+
+FrameData frameData;    // 存放熱像儀的輸出資料
+ThermalOutputData thermalOutputData;     // 存放熱像儀計算出的數據
+guide_measure_external_param_t *measureExternalParam;   //熱像儀參數設定
 
 
 
 
+int main(void) {
 
-int main(void)
-{
     int ret=0;
     guide_usb_setloglevel(LOG_INFO);
 
@@ -110,6 +145,10 @@ int main(void)
         }
 
         guide_usb_setpalette(8);
+
+        thermalOutputData.paramline = (unsigned char *)malloc(WIDTH * 2);
+        thermalOutputData.pTemper = (float *)malloc(sizeof(float) * WIDTH * HEIGHT);
+        thermalOutputData.pRgb = (unsigned char *)malloc(WIDTH * HEIGHT * 3);
 
 
         measureExternalParam = (guide_measure_external_param_t *)malloc(sizeof(guide_measure_external_param_t));
@@ -161,6 +200,7 @@ int main(void)
         std::cout << "exit return" << ret << std::endl; 
 
 
+
         delete deviceInfo;
         return ret;
     }
@@ -183,8 +223,7 @@ int connectStatusCallBack(guide_usb_device_status_e deviceStatus)
 
 
 
-int frameCallBack(guide_usb_frame_data_t *pVideoData)
-{
+int frameCallBack(guide_usb_frame_data_t *pVideoData) {
 
     frameData.frame_width = pVideoData->frame_width;
     frameData.frame_height = pVideoData->frame_height;
@@ -198,7 +237,59 @@ int frameCallBack(guide_usb_frame_data_t *pVideoData)
     frameData.paramLine_length = pVideoData->paramLine_length;
 
 
+    
+
+    if (pVideoData->paramLine != NULL) {
+        // 複製一段記憶體區塊的函式
+        // thermalOutputData.paramline = new unsigned char[frameData.paramLine_length];
+        memcpy(thermalOutputData.paramline, pVideoData->paramLine, pVideoData->paramLine_length);
+    }
+
+
+
+    guide_measure_convertgray2temper(1, 1, frameData.frame_src_data, thermalOutputData.paramline, SIZE, measureExternalParam, thermalOutputData.pTemper);
+
+
+    guide_temp_to_rgb24(thermalOutputData.pTemper,  thermalOutputData.pRgb, WIDTH, HEIGHT, frameData.paramLine[49],  frameData.paramLine[46], 8);
+
+
+    cv::Mat rgbImage = convertRGBToMat(thermalOutputData.pRgb);
+
+
+    
+
+
+
+
+
+    // printf("first pix temp-------------------------%.1f\n", thermalOutputData.pTemper[0]);
+    
+
+
+
     // guide_temp_to_rgb24(float*  pTemp,  unsigned  char*  pRgb,  int  width,intheight,float  minT, float maxT,int paletteIndex) 
+
+
+
+    
+    // cv::Mat rgbImage = convertRGBToMat(frameData.frame_rgb_data);
+    // cv::Mat Y16_img = convertY16ToGray(frameData.frame_src_data);
+    cv::Mat YUVImage = convertYUV422ToBGR(frameData.frame_yuv_data);
+
+    // cv::imshow("Thermal Image", YUVImage);
+
+    cv::imshow("RGB Image", rgbImage);
+    // cv::imshow("Y16 Image", Y16_img);
+    cv::imshow("YUV Image", YUVImage);
+
+
+
+
+    int key = cv::waitKey(1);
+        if (key == 27) { // ESC 鍵的 ASCII 碼為 27
+            exitLoop = true;
+        }
+
 
     /*
     44: 最熱點x座標
@@ -207,7 +298,7 @@ int frameCallBack(guide_usb_frame_data_t *pVideoData)
     47: 最冷點x座標
     48: 最冷點y座標
     49: 最冷點溫度
-    */
+
 
     std::cout << "最熱點x座標: " << frameData.paramLine[44] << std::endl;
     std::cout << "最熱點y座標: " << frameData.paramLine[45] << std::endl;
@@ -218,27 +309,7 @@ int frameCallBack(guide_usb_frame_data_t *pVideoData)
     std::cout << "最冷點溫度: " << frameData.paramLine[49] << std::endl;
 
     std::cout << "==================================================" << std::endl;
-
-
-
-    
-    cv::Mat rgbImage = convertRGBToMat(frameData.frame_rgb_data);
-    cv::Mat Y16_img = convertY16ToGray(frameData.frame_src_data);
-    cv::Mat YUVImage = convertYUV422ToBGR(frameData.frame_yuv_data);
-
-    // cv::imshow("Thermal Image", YUVImage);
-
-    cv::imshow("RGB Image", rgbImage);
-    cv::imshow("Y16 Image", Y16_img);
-    cv::imshow("YUV Image", YUVImage);
-
-
-
-
-    int key = cv::waitKey(1);
-        if (key == 27) { // ESC 鍵的 ASCII 碼為 27
-            exitLoop = true;
-        }
+    */
 
 
 }

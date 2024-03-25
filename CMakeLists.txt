@@ -90,14 +90,14 @@ link_directories(lib/static)
 # /* -------------------------------- 官方給的新Demo -------------------------------- */
 # gcc -I./include Demo.c -L./lib -lGuideUSBCamera -lpthread -lGuideMT -lm -o Demo
 
-add_executable(New_Demo src/New_Demo.c)
-target_link_libraries(New_Demo 
-    ${OpenCV_LIBS}
-    GuideUSBCamera -ldl
-    GuideMT -ldl
-    pthread
-    m
-)
+# add_executable(New_Demo src/New_Demo.c)
+# target_link_libraries(New_Demo 
+#     ${OpenCV_LIBS}
+#     GuideUSBCamera -ldl
+#     GuideMT -ldl
+#     pthread
+#     m
+# )
 
 
 
