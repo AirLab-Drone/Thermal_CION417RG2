@@ -127,7 +127,6 @@ guide_measure_external_param_t *measureExternalParam;   //熱像儀參數設定
 
 
 
-
 int main(void) {
 
     int hotspot_x, hotspot_y;
@@ -148,10 +147,17 @@ int main(void) {
         }
 
         guide_usb_setpalette(8);
+        
 
-        thermalOutputData.paramline = (unsigned char *)malloc(WIDTH * HEIGHT * 2);
+        // 分配空間
+        frameData.frame_src_data = (short *)malloc(WIDTH * HEIGHT);
+        frameData.frame_yuv_data = (short *)malloc(WIDTH * HEIGHT * 3);
+        frameData.paramLine = (short *)malloc(WIDTH);
+
+        thermalOutputData.paramline = (unsigned char *)malloc(WIDTH * 2);
         thermalOutputData.pTemper = (float *)malloc(sizeof(float) * WIDTH * HEIGHT);
         thermalOutputData.pRgb = (unsigned char *)malloc(WIDTH * HEIGHT * 3);
+
 
 
         measureExternalParam = (guide_measure_external_param_t *)malloc(sizeof(guide_measure_external_param_t));
@@ -193,34 +199,38 @@ int main(void) {
 
         while(!exitLoop) {   
 
+            if ((frameData.paramLine != NULL) && (thermalOutputData.paramline != NULL)){
 
-            // std::cout << "最熱點x座標: " << thermalOutputData.paramline[44] << std::endl;
-            // std::cout << "最熱點y座標: " << thermalOutputData.paramline[45] << std::endl;
-
-
-
-
-            // hotspot_x = thermalOutputData.paramline[44];
-            // hotspot_y = thermalOutputData.paramline[45];
-            
-            
-            // guide_measure_convertgray2temper(1, 1, frameData.frame_src_data, thermalOutputData.paramline, SIZE, measureExternalParam, thermalOutputData.pTemper);
-            
+                hotspot_x = frameData.paramLine[44];
+                hotspot_y = frameData.paramLine[45];
+                
+                
+                guide_measure_convertgray2temper(1, 1, frameData.frame_src_data, thermalOutputData.paramline, SIZE, measureExternalParam, thermalOutputData.pTemper);
+                
+                std::cout << "最熱點x座標: " << hotspot_x << std::endl;
+                std::cout << "最熱點y座標: " << hotspot_y << std::endl;
 
 
-            // std::cout << "最熱點x座標: " << hotspot_x << std::endl;
-            // std::cout << "最熱點y座標: " << hotspot_y << std::endl;
+                
+
+                // if (frameData.frame_yuv_data != NULL) {
+                //     cv::Mat YUVImage = convertYUV422ToBGR(frameData.frame_yuv_data);
+                //     cv::imshow("YUV Image", YUVImage);
+                // }
+
+                // int key = cv::waitKey(1);
+                // if (key == 27) { // ESC 鍵的 ASCII 碼為 27
+                // exitLoop = true;
+                // }
+                
 
 
-            
+                // std::cout << "溫度: " << thermalOutputData.pTemper[hotspot_x * hotspot_y -1] << std::endl;
 
-
-            // std::cout << "溫度: " << thermalOutputData.pTemper[hotspot_x * hotspot_y -1] << std::endl;
-
-            // printArray(thermalOutputData.pTemper, WIDTH, HEIGHT);
-
-            
-            usleep(10000);
+                // printArray(thermalOutputData.pTemper, WIDTH, HEIGHT);
+            }
+             
+            usleep(1000);
         }
 
         ret = guide_usb_closestream();
@@ -228,7 +238,6 @@ int main(void) {
 
         ret = guide_usb_exit();
         std::cout << "exit return" << ret << std::endl; 
-
 
 
         delete deviceInfo;
@@ -249,31 +258,54 @@ int connectStatusCallBack(guide_usb_device_status_e deviceStatus)
     }
 }
 
-
+/*
+typedef struct
+{
+    int frame_width;                        //图像宽度
+    int frame_height;                       //图像高度
+    unsigned char* frame_rgb_data;          //rgb数据           指針
+    int frame_rgb_data_length;              //rgb数据长度
+    short* frame_src_data;                  //原始数据，x16/y16  指針
+    int frame_src_data_length;              //原始数据长度
+    short* frame_yuv_data;                  //yuv数据           指針
+    int frame_yuv_data_length;              //yuv数据长度
+    short* paramLine;                       //参数行            指針
+    int paramLine_length;                   //参数行长度
+}guide_usb_frame_data_t;
+*/
 
 
 // 更新熱像儀量測數據
 int frameCallBack(guide_usb_frame_data_t *pVideoData) {
 
+
+    // check the data is exist, if exit copy data to framdata
+    if (pVideoData->frame_src_data != NULL) {
+        memcpy(frameData.frame_src_data, pVideoData->frame_src_data, pVideoData->frame_src_data_length);
+    }
+
+    if (pVideoData->frame_yuv_data != NULL) {
+        memcpy(frameData.frame_yuv_data, pVideoData->frame_yuv_data, pVideoData->frame_yuv_data_length);
+    }
+
+    if (pVideoData->paramLine != NULL) {
+        memcpy(frameData.paramLine, pVideoData->paramLine, pVideoData->paramLine_length);
+        memcpy(thermalOutputData.paramline, pVideoData->paramLine, pVideoData->paramLine_length);
+    }
+
+
     frameData.frame_width = pVideoData->frame_width;
     frameData.frame_height = pVideoData->frame_height;
-    frameData.frame_rgb_data = pVideoData->frame_rgb_data;
-    frameData.frame_rgb_data_length = pVideoData->frame_rgb_data_length;
-    frameData.frame_src_data = pVideoData->frame_src_data;
     frameData.frame_src_data_length = pVideoData->frame_src_data_length;
-    frameData.frame_yuv_data = pVideoData->frame_yuv_data;
     frameData.frame_yuv_data_length = pVideoData->frame_yuv_data_length;
-    frameData.paramLine = pVideoData->paramLine;
     frameData.paramLine_length = pVideoData->paramLine_length;
 
 
 
-    if (pVideoData->paramLine != NULL) {
-        // 複製一段記憶體區塊的函式
-        // thermalOutputData.paramline = new unsigned char[frameData.paramLine_length];
-        memcpy(thermalOutputData.paramline, pVideoData->paramLine, pVideoData->paramLine_length);
-    }
 
+
+    // std::cout << frameData.frame_yuv_data_length << std::endl;
+    // std::cout << pVideoData->frame_yuv_data_length << std::endl;
 
     // std::cout << "from callback:" << frameData.paramLine_length << std::endl;
 
@@ -282,7 +314,7 @@ int frameCallBack(guide_usb_frame_data_t *pVideoData) {
 
     // cv::Mat rgbImage = convertRGBToMat(thermalOutputData.pRgb);
 
-
+    
 
 
 
@@ -293,21 +325,23 @@ int frameCallBack(guide_usb_frame_data_t *pVideoData) {
     
     // cv::Mat rgbImage = convertRGBToMat(frameData.frame_rgb_data);
     // cv::Mat Y16_img = convertY16ToGray(frameData.frame_src_data);
-    cv::Mat YUVImage = convertYUV422ToBGR(frameData.frame_yuv_data);
+    // cv::Mat YUVImage = convertYUV422ToBGR(frameData.frame_yuv_data);
+    // cv::Mat YUVImage1 = convertYUV422ToBGR(pVideoData->frame_yuv_data);
 
-    // cv::imshow("Thermal Image", YUVImage);
+    // // cv::imshow("Thermal Image", YUVImage);
 
-    // cv::imshow("RGB Image", rgbImage);
-    // cv::imshow("Y16 Image", Y16_img);
-    cv::imshow("YUV Image", YUVImage);
+    // // cv::imshow("RGB Image", rgbImage);
+    // // cv::imshow("Y16 Image", Y16_img);
+    // cv::imshow("YUV Image", YUVImage);
+    // cv::imshow("YUV Image1", YUVImage1);
 
 
 
 
-    int key = cv::waitKey(1);
-        if (key == 27) { // ESC 鍵的 ASCII 碼為 27
-            exitLoop = true;
-        }
+    // int key = cv::waitKey(1);
+    //     if (key == 27) { // ESC 鍵的 ASCII 碼為 27
+    //         exitLoop = true;
+    //     }
 
 
     /*
@@ -319,15 +353,15 @@ int frameCallBack(guide_usb_frame_data_t *pVideoData) {
     49: 最冷點溫度
     */
 
-    std::cout << "最熱點x座標: " << frameData.paramLine[44] << std::endl;
-    std::cout << "最熱點y座標: " << frameData.paramLine[45] << std::endl;
-    std::cout << "最熱點溫度: " << frameData.paramLine[46] << std::endl;
+    // std::cout << "最熱點x座標: " << frameData.paramLine[44] << std::endl;
+    // std::cout << "最熱點y座標: " << frameData.paramLine[45] << std::endl;
+    // std::cout << "最熱點溫度: " << frameData.paramLine[46] << std::endl;
     
-    std::cout << "最冷點x座標: " << frameData.paramLine[47] << std::endl;
-    std::cout << "最冷點y座標: " << frameData.paramLine[48] << std::endl;
-    std::cout << "最冷點溫度: " << frameData.paramLine[49] << std::endl;
+    // std::cout << "最冷點x座標: " << frameData.paramLine[47] << std::endl;
+    // std::cout << "最冷點y座標: " << frameData.paramLine[48] << std::endl;
+    // std::cout << "最冷點溫度: " << frameData.paramLine[49] << std::endl;
 
-    std::cout << "==================================================" << std::endl;
+    // std::cout << "==================================================" << std::endl;
     
 
 
