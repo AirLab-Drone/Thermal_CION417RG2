@@ -44,6 +44,7 @@ cv::Mat convertRGBToMat(const unsigned char* rgbData);
 cv::Mat convertY16ToGray(const short* y16Data);
 std::string Find_Thermal_Device();
 bool comparePaths(const std::string& path1, const std::string& path2);
+void printArray(float* arr, int rows, int cols);
 
 bool exitLoop = false;
 
@@ -129,6 +130,8 @@ guide_measure_external_param_t *measureExternalParam;   //熱像儀參數設定
 
 int main(void) {
 
+    int hotspot_x, hotspot_y;
+
     int ret=0;
     guide_usb_setloglevel(LOG_INFO);
 
@@ -146,7 +149,7 @@ int main(void) {
 
         guide_usb_setpalette(8);
 
-        thermalOutputData.paramline = (unsigned char *)malloc(WIDTH * 2);
+        thermalOutputData.paramline = (unsigned char *)malloc(WIDTH * HEIGHT * 2);
         thermalOutputData.pTemper = (float *)malloc(sizeof(float) * WIDTH * HEIGHT);
         thermalOutputData.pRgb = (unsigned char *)malloc(WIDTH * HEIGHT * 3);
 
@@ -188,9 +191,36 @@ int main(void) {
             return ret;
         }
 
-        while(!exitLoop)
-        {   
-            // usleep(10);
+        while(!exitLoop) {   
+
+
+            // std::cout << "最熱點x座標: " << thermalOutputData.paramline[44] << std::endl;
+            // std::cout << "最熱點y座標: " << thermalOutputData.paramline[45] << std::endl;
+
+
+
+
+            // hotspot_x = thermalOutputData.paramline[44];
+            // hotspot_y = thermalOutputData.paramline[45];
+            
+            
+            // guide_measure_convertgray2temper(1, 1, frameData.frame_src_data, thermalOutputData.paramline, SIZE, measureExternalParam, thermalOutputData.pTemper);
+            
+
+
+            // std::cout << "最熱點x座標: " << hotspot_x << std::endl;
+            // std::cout << "最熱點y座標: " << hotspot_y << std::endl;
+
+
+            
+
+
+            // std::cout << "溫度: " << thermalOutputData.pTemper[hotspot_x * hotspot_y -1] << std::endl;
+
+            // printArray(thermalOutputData.pTemper, WIDTH, HEIGHT);
+
+            
+            usleep(10000);
         }
 
         ret = guide_usb_closestream();
@@ -222,7 +252,7 @@ int connectStatusCallBack(guide_usb_device_status_e deviceStatus)
 
 
 
-
+// 更新熱像儀量測數據
 int frameCallBack(guide_usb_frame_data_t *pVideoData) {
 
     frameData.frame_width = pVideoData->frame_width;
@@ -237,7 +267,6 @@ int frameCallBack(guide_usb_frame_data_t *pVideoData) {
     frameData.paramLine_length = pVideoData->paramLine_length;
 
 
-    
 
     if (pVideoData->paramLine != NULL) {
         // 複製一段記憶體區塊的函式
@@ -246,24 +275,14 @@ int frameCallBack(guide_usb_frame_data_t *pVideoData) {
     }
 
 
+    // std::cout << "from callback:" << frameData.paramLine_length << std::endl;
 
-    guide_measure_convertgray2temper(1, 1, frameData.frame_src_data, thermalOutputData.paramline, SIZE, measureExternalParam, thermalOutputData.pTemper);
-
-
-    guide_temp_to_rgb24(thermalOutputData.pTemper,  thermalOutputData.pRgb, WIDTH, HEIGHT, frameData.paramLine[49],  frameData.paramLine[46], 8);
+    // guide_temp_to_rgb24(thermalOutputData.pTemper,  thermalOutputData.pRgb, WIDTH, HEIGHT, frameData.paramLine[49],  frameData.paramLine[46], 8);
 
 
-    cv::Mat rgbImage = convertRGBToMat(thermalOutputData.pRgb);
+    // cv::Mat rgbImage = convertRGBToMat(thermalOutputData.pRgb);
 
 
-    
-
-
-
-
-
-    // printf("first pix temp-------------------------%.1f\n", thermalOutputData.pTemper[0]);
-    
 
 
 
@@ -278,7 +297,7 @@ int frameCallBack(guide_usb_frame_data_t *pVideoData) {
 
     // cv::imshow("Thermal Image", YUVImage);
 
-    cv::imshow("RGB Image", rgbImage);
+    // cv::imshow("RGB Image", rgbImage);
     // cv::imshow("Y16 Image", Y16_img);
     cv::imshow("YUV Image", YUVImage);
 
@@ -298,7 +317,7 @@ int frameCallBack(guide_usb_frame_data_t *pVideoData) {
     47: 最冷點x座標
     48: 最冷點y座標
     49: 最冷點溫度
-
+    */
 
     std::cout << "最熱點x座標: " << frameData.paramLine[44] << std::endl;
     std::cout << "最熱點y座標: " << frameData.paramLine[45] << std::endl;
@@ -309,7 +328,7 @@ int frameCallBack(guide_usb_frame_data_t *pVideoData) {
     std::cout << "最冷點溫度: " << frameData.paramLine[49] << std::endl;
 
     std::cout << "==================================================" << std::endl;
-    */
+    
 
 
 }
@@ -414,3 +433,11 @@ bool comparePaths(const std::string& path1, const std::string& path2) {
     return num1 < num2;
 }
 
+void printArray(float* arr, int rows, int cols) {
+    for (int i = 0; i < rows; ++i) {
+        for (int j = 0; j < cols; ++j) {
+            std::cout << arr[i * cols + j] << " ";
+        }
+        std::cout << "==================================" << std::endl;
+    }
+}

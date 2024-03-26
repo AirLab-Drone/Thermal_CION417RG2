@@ -104,7 +104,7 @@ link_directories(lib/static)
 
 # /* ------------------------------ 測試新的SDK Demo ------------------------------ */
 add_executable(test_new_SDK_demo src/test_new_SDK_demo.cpp)
-target_link_libraries(test_new_SDK_demo 
+target_link_libraries(test_new_SDK_demo   
     ${OpenCV_LIBS}
     GuideUSBCamera -ldl
     GuideMT -ldl
