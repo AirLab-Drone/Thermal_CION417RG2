@@ -20,12 +20,13 @@ extern "C"
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
 
+
 #define WIDTH 384
 #define HEIGHT 288
 
 /* --------------------------------- 熱像儀info -------------------------------- */
 const std::string vendorId = "04b4";
-const std::string productId = "f8f8";
+const std::string productId = "f9f9";
 const std::string deviceDescription = "Cypress Semiconductor Corp. GuideCamera";
 
 
