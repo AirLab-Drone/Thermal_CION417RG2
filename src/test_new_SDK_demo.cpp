@@ -27,7 +27,7 @@ extern "C"{
 
 #define WIDTH 384
 #define HEIGHT 288
-#define SIZE 110592
+const int SIZE = 384*288;   // =110592
 
 
 /* --------------------------------- 熱像儀info -------------------------------- */
@@ -44,7 +44,7 @@ cv::Mat convertRGBToMat(const unsigned char* rgbData);
 cv::Mat convertY16ToGray(const short* y16Data);
 std::string Find_Thermal_Device();
 bool comparePaths(const std::string& path1, const std::string& path2);
-void printArray(float* arr, int rows, int cols);
+
 
 bool exitLoop = false;
 
@@ -75,15 +75,19 @@ struct FrameData {
         // 釋放記憶體
         if (frame_rgb_data != nullptr) {
             delete[] frame_rgb_data;
+            frame_rgb_data = nullptr;
         }
         if (frame_src_data != nullptr) {
             delete[] frame_src_data;
+            frame_src_data = nullptr;
         }
         if (frame_yuv_data != nullptr) {
             delete[] frame_yuv_data;
+            frame_yuv_data = nullptr;
         }
         if (paramLine != nullptr) {
             delete[] paramLine;
+            paramLine = nullptr;
         }
     }
 };
@@ -127,12 +131,16 @@ guide_measure_external_param_t *measureExternalParam;   //熱像儀參數設定
 
 
 
+
+
+
 int main(void) {
 
-    int hotspot_x, hotspot_y;
+    int HotSpot_x, HotSpot_y, ColdSpot_x, ColdSpot_y;
+    float HotSpot_temp, ColdSpot_temp;
 
     int ret=0;
-    guide_usb_setloglevel(LOG_INFO);
+    guide_usb_setloglevel(LOG_TEST);
 
     std::string device_path = Find_Thermal_Device();
 
@@ -149,16 +157,14 @@ int main(void) {
         guide_usb_setpalette(8);
         
 
-        // 分配空間
-        frameData.frame_src_data = (short *)malloc(WIDTH * HEIGHT);
-        frameData.frame_yuv_data = (short *)malloc(WIDTH * HEIGHT * 3);
-        frameData.paramLine = (short *)malloc(WIDTH);
+        /* ---------------------------------- 分配空間 ---------------------------------- */
+        frameData.frame_src_data = (short *)malloc(WIDTH * HEIGHT);     // y16dta
+        frameData.frame_yuv_data = (short *)malloc(WIDTH * HEIGHT * 3); // yuvdata
+        frameData.paramLine = (short *)malloc(WIDTH);                   // 參數行
 
-        thermalOutputData.paramline = (unsigned char *)malloc(WIDTH * 2);
-        thermalOutputData.pTemper = (float *)malloc(sizeof(float) * WIDTH * HEIGHT);
-        thermalOutputData.pRgb = (unsigned char *)malloc(WIDTH * HEIGHT * 3);
-
-
+        thermalOutputData.paramline = (unsigned char *)malloc(WIDTH * 2);   // 參數行
+        thermalOutputData.pTemper = (float *)malloc(sizeof(float) * WIDTH * HEIGHT);    // 溫度
+        thermalOutputData.pRgb = (unsigned char *)malloc(WIDTH * HEIGHT * 3);   // 偽彩
 
         measureExternalParam = (guide_measure_external_param_t *)malloc(sizeof(guide_measure_external_param_t));
         measureExternalParam->emiss = 98;
@@ -201,36 +207,54 @@ int main(void) {
 
             if ((frameData.paramLine != NULL) && (thermalOutputData.paramline != NULL)){
 
-                hotspot_x = frameData.paramLine[44];
-                hotspot_y = frameData.paramLine[45];
+                /*
+                44: 最熱點x座標
+                45: 最熱點y座標
+                46: 最熱點溫度
+                47: 最冷點x座標
+                48: 最冷點y座標
+                49: 最冷點溫度
+                */
+
+                HotSpot_x = frameData.paramLine[44];
+                HotSpot_y = frameData.paramLine[45];
+                HotSpot_temp = frameData.paramLine[46] / 10.0;
+                ColdSpot_x = frameData.paramLine[47];
+                ColdSpot_y = frameData.paramLine[48];
+                ColdSpot_temp = frameData.paramLine[49] / 10.0;
+
+                if (frameData.frame_yuv_data != NULL) {
+                    cv::Mat YUVImage = convertYUV422ToBGR(frameData.frame_yuv_data);
+                    cv::imshow("YUV Image", YUVImage);
+                }
+
+
                 
                 
                 guide_measure_convertgray2temper(1, 1, frameData.frame_src_data, thermalOutputData.paramline, SIZE, measureExternalParam, thermalOutputData.pTemper);
                 
-                std::cout << "最熱點x座標: " << hotspot_x << std::endl;
-                std::cout << "最熱點y座標: " << hotspot_y << std::endl;
+                std::cout << "最熱點x座標: " << HotSpot_x << std::endl;
+                std::cout << "最熱點y座標: " << HotSpot_y << std::endl;
+                std::cout << "最熱點溫度: " << HotSpot_temp << std::endl;
+                std::cout << "================================================" << std::endl;
+                // std::cout << "最後一個pixel溫度: " << thermalOutputData.pTemper[SIZE-1] << std::endl;
 
+                // std::cout << "====================================================================================================" << std::endl;
+                // for (int i=0; i<SIZE; i++) {
+                //     std::cout << thermalOutputData.pTemper[i] << ", ";
+
+                // }
+                // std::cout << "====================================================================================================" << std::endl;
 
                 
 
-                // if (frameData.frame_yuv_data != NULL) {
-                //     cv::Mat YUVImage = convertYUV422ToBGR(frameData.frame_yuv_data);
-                //     cv::imshow("YUV Image", YUVImage);
-                // }
-
-                // int key = cv::waitKey(1);
-                // if (key == 27) { // ESC 鍵的 ASCII 碼為 27
-                // exitLoop = true;
-                // }
-                
-
-
-                // std::cout << "溫度: " << thermalOutputData.pTemper[hotspot_x * hotspot_y -1] << std::endl;
-
-                // printArray(thermalOutputData.pTemper, WIDTH, HEIGHT);
+                int key = cv::waitKey(1);
+                if (key == 27) { // ESC 鍵的 ASCII 碼為 27
+                exitLoop = true;
+                }
             }
              
-            usleep(1000);
+            // usleep(1000);
         }
 
         ret = guide_usb_closestream();
@@ -258,26 +282,10 @@ int connectStatusCallBack(guide_usb_device_status_e deviceStatus)
     }
 }
 
-/*
-typedef struct
-{
-    int frame_width;                        //图像宽度
-    int frame_height;                       //图像高度
-    unsigned char* frame_rgb_data;          //rgb数据           指針
-    int frame_rgb_data_length;              //rgb数据长度
-    short* frame_src_data;                  //原始数据，x16/y16  指針
-    int frame_src_data_length;              //原始数据长度
-    short* frame_yuv_data;                  //yuv数据           指針
-    int frame_yuv_data_length;              //yuv数据长度
-    short* paramLine;                       //参数行            指針
-    int paramLine_length;                   //参数行长度
-}guide_usb_frame_data_t;
-*/
 
 
 // 更新熱像儀量測數據
 int frameCallBack(guide_usb_frame_data_t *pVideoData) {
-
 
     // check the data is exist, if exit copy data to framdata
     if (pVideoData->frame_src_data != NULL) {
@@ -285,7 +293,7 @@ int frameCallBack(guide_usb_frame_data_t *pVideoData) {
     }
 
     if (pVideoData->frame_yuv_data != NULL) {
-        memcpy(frameData.frame_yuv_data, pVideoData->frame_yuv_data, pVideoData->frame_yuv_data_length);
+        memcpy(frameData.frame_yuv_data, pVideoData->frame_yuv_data, pVideoData->frame_yuv_data_length*2);
     }
 
     if (pVideoData->paramLine != NULL) {
@@ -299,72 +307,6 @@ int frameCallBack(guide_usb_frame_data_t *pVideoData) {
     frameData.frame_src_data_length = pVideoData->frame_src_data_length;
     frameData.frame_yuv_data_length = pVideoData->frame_yuv_data_length;
     frameData.paramLine_length = pVideoData->paramLine_length;
-
-
-
-
-
-    // std::cout << frameData.frame_yuv_data_length << std::endl;
-    // std::cout << pVideoData->frame_yuv_data_length << std::endl;
-
-    // std::cout << "from callback:" << frameData.paramLine_length << std::endl;
-
-    // guide_temp_to_rgb24(thermalOutputData.pTemper,  thermalOutputData.pRgb, WIDTH, HEIGHT, frameData.paramLine[49],  frameData.paramLine[46], 8);
-
-
-    // cv::Mat rgbImage = convertRGBToMat(thermalOutputData.pRgb);
-
-    
-
-
-
-    // guide_temp_to_rgb24(float*  pTemp,  unsigned  char*  pRgb,  int  width,intheight,float  minT, float maxT,int paletteIndex) 
-
-
-
-    
-    // cv::Mat rgbImage = convertRGBToMat(frameData.frame_rgb_data);
-    // cv::Mat Y16_img = convertY16ToGray(frameData.frame_src_data);
-    // cv::Mat YUVImage = convertYUV422ToBGR(frameData.frame_yuv_data);
-    // cv::Mat YUVImage1 = convertYUV422ToBGR(pVideoData->frame_yuv_data);
-
-    // // cv::imshow("Thermal Image", YUVImage);
-
-    // // cv::imshow("RGB Image", rgbImage);
-    // // cv::imshow("Y16 Image", Y16_img);
-    // cv::imshow("YUV Image", YUVImage);
-    // cv::imshow("YUV Image1", YUVImage1);
-
-
-
-
-    // int key = cv::waitKey(1);
-    //     if (key == 27) { // ESC 鍵的 ASCII 碼為 27
-    //         exitLoop = true;
-    //     }
-
-
-    /*
-    44: 最熱點x座標
-    45: 最熱點y座標
-    46: 最熱點溫度
-    47: 最冷點x座標
-    48: 最冷點y座標
-    49: 最冷點溫度
-    */
-
-    // std::cout << "最熱點x座標: " << frameData.paramLine[44] << std::endl;
-    // std::cout << "最熱點y座標: " << frameData.paramLine[45] << std::endl;
-    // std::cout << "最熱點溫度: " << frameData.paramLine[46] << std::endl;
-    
-    // std::cout << "最冷點x座標: " << frameData.paramLine[47] << std::endl;
-    // std::cout << "最冷點y座標: " << frameData.paramLine[48] << std::endl;
-    // std::cout << "最冷點溫度: " << frameData.paramLine[49] << std::endl;
-
-    // std::cout << "==================================================" << std::endl;
-    
-
-
 }
 
 
@@ -376,16 +318,19 @@ cv::Mat convertYUV422ToBGR(const short* yuv422Data) {
 }
 
 cv::Mat convertRGBToMat(const unsigned char* rgbData) {
-    cv::Mat rgbImage(HEIGHT, WIDTH, CV_8UC3, (void*)rgbData);
-    return rgbImage.clone(); // 返回複製的影像以避免內存問題
+    cv::Mat frameMat(HEIGHT, WIDTH, CV_8UC3, const_cast<unsigned char*>(rgbData));
+    return frameMat.clone(); // 返回複製的影像以避免內存問題
 }
 
 
+
+
 cv::Mat convertY16ToGray(const short* y16Data) {
-    cv::Mat grayImage(HEIGHT, WIDTH, CV_16UC1, (void*)y16Data);
+    cv::Mat frameMat(HEIGHT, WIDTH, CV_16UC1, const_cast<short*>(y16Data));
+    // cv::Mat grayImage(HEIGHT, WIDTH, CV_16UC1, (void*)y16Data);
     // Convert to 8-bit grayscale image
     cv::Mat gray8Bit;
-    grayImage.convertTo(gray8Bit, CV_8U, 255.0 / 65535.0); // Scale to 0-255
+    frameMat.convertTo(gray8Bit, CV_8U); // Scale to 0-255
     return gray8Bit;
 }
 
@@ -467,11 +412,3 @@ bool comparePaths(const std::string& path1, const std::string& path2) {
     return num1 < num2;
 }
 
-void printArray(float* arr, int rows, int cols) {
-    for (int i = 0; i < rows; ++i) {
-        for (int j = 0; j < cols; ++j) {
-            std::cout << arr[i * cols + j] << " ";
-        }
-        std::cout << "==================================" << std::endl;
-    }
-}
