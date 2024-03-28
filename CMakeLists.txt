@@ -90,14 +90,14 @@ link_directories(lib/static)
 # /* -------------------------------- 官方給的新Demo -------------------------------- */
 # gcc -I./include Demo.c -L./lib -lGuideUSBCamera -lpthread -lGuideMT -lm -o Demo
 
-add_executable(New_Demo src/New_Demo.c)
-target_link_libraries(New_Demo 
-    ${OpenCV_LIBS}
-    GuideUSBCamera -ldl
-    GuideMT -ldl
-    pthread
-    m
-)
+# add_executable(New_Demo src/New_Demo.c)
+# target_link_libraries(New_Demo 
+#     ${OpenCV_LIBS}
+#     GuideUSBCamera -ldl
+#     GuideMT -ldl
+#     pthread
+#     m
+# )
 
 
 
@@ -114,3 +114,24 @@ target_link_libraries(test_new_SDK_demo
     # libGuideMT.a
     # libGuideMT.so
 )
+
+
+# /* -------------------------------- ros2 node ------------------------------- */
+add_executable(coin417rg2_ros2_node src/COIN417RG2_ros2_node.cpp)
+target_link_libraries(coin417rg2_ros2_node 
+    # "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+    # "$<INSTALL_INTERFACE:include>"
+    ${OpenCV_LIBS}
+    ${rclcpp_LIBRARIES}
+    ${std_msgs_LIBRARIES}
+    ${sensor_msgs_LIBRARIES}
+    # ${cv_bridge_LIBRARIES}  # 這樣不行
+    cv_bridge::cv_bridge      # 這樣會成功==
+    image_transport::image_transport
+    GuideUSBCamera -ldl
+    GuideMT -ldl
+    pthread
+    m
+    udev
+)
+
