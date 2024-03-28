@@ -19,18 +19,12 @@ cmake ..
 make
 ```
 
-### official Demo
-```
-./Demo
-```
-
-
 ### Run with image
 ```
-./test_thermal
+./test_new_SDK_demo
 ```
 
 ### Run with ros2 node
 ```
-./test_thermal_node
+./coin417rg2_ros2_node
 ```
