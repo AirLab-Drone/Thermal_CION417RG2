@@ -6,7 +6,7 @@ ubuntu 22.04 usb3.0 SDK
 
 
 It look like:
-https://github.com/AirLab-Drone/Thermal_CION417RG2/blob/main/doc/thermal_img.png
+[](https://github.com/AirLab-Drone/Thermal_CION417RG2/blob/main/doc/thermal_img.png)
 
 
 ### build
