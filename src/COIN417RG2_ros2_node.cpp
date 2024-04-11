@@ -42,6 +42,8 @@ using namespace std::chrono_literals;
 #define WIDTH 384
 #define HEIGHT 288
 const int SIZE = 384 * 288; // = 110592
+const int CENTER_X = 192; 
+const int CENTER_Y = 144;
 
 
 /* --------------------------------- 熱像儀info -------------------------------- */
@@ -179,11 +181,21 @@ private:
                 }
             }
 
+            /* --------------------------------- 以左上角為原點 -------------------------------- */
+            x_pixel_ = (maxIndex)%WIDTH +1;
+            y_pixel_ = (maxIndex)/WIDTH +1;
+
+
+            /* -------------------------------- 轉換成中心當原點 -------------------------------- */
+            x_pixel_ = x_pixel_ - CENTER_X;
+            y_pixel_ = y_pixel_ - CENTER_Y;
+
+
             // Publish pixel values
             auto pixel_msg = std::make_unique<std_msgs::msg::Int32MultiArray>();
-            pixel_msg->data = {(maxIndex)%WIDTH +1, (maxIndex)/WIDTH +1};
+            pixel_msg->data = {x_pixel_, y_pixel_};
             pixel_pub_->publish(std::move(pixel_msg));
-            RCLCPP_INFO(this->get_logger(), "Published pixel values: [%d, %d]", (maxIndex)%WIDTH +1, (maxIndex)/WIDTH +1);
+            RCLCPP_INFO(this->get_logger(), "Published pixel values: [%d, %d]", x_pixel_, y_pixel_);
 
 
             // Publish temperature
